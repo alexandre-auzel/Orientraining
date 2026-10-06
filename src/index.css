@@ -195,3 +195,184 @@ button {
 .column.ko .cell {
   background: #fff3f2;
 }
+
+main.wide {
+  max-width: none;
+  padding: 12px 16px;
+}
+
+.topbar {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.back {
+  justify-self: start;
+  font-size: 0.9rem;
+  padding: 4px 10px;
+}
+
+.menu {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.menu button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.menu button span {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* Vue 3D et carte côte à côte, carte dimensionnée sur la hauteur de l'écran. */
+.relief {
+  --map-size: min(calc(100vh - 80px), 50vw);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.relief-side {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.relief-view {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid #1a1a1a;
+  display: block;
+}
+
+.relief-map {
+  flex: none;
+  width: var(--map-size);
+  height: var(--map-size);
+  border: 1px solid #1a1a1a;
+  background: #fff;
+}
+
+.relief-map.clickable {
+  cursor: crosshair;
+}
+
+@media (max-width: 900px) {
+  .relief {
+    --map-size: calc(100vw - 34px);
+    flex-direction: column;
+    align-items: center;
+  }
+  .relief-side {
+    width: 100%;
+  }
+}
+
+.relief-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.relief-toolbar .status {
+  margin: 0 0 4px;
+}
+
+.relief-option {
+  font-size: 0.9rem;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compass {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.compass-heading {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.compass-heading strong {
+  font-size: 1.1rem;
+  color: #1a1a1a;
+}
+
+.relief-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.relief-actions .instruction {
+  color: #333;
+}
+
+.relief .result {
+  max-width: none;
+  margin: 0;
+}
+
+.relief .result button {
+  margin-top: 8px;
+}
+
+.legend {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.legend .dot.guess {
+  border-color: #b0189e;
+}
+
+.legend .dot.truth {
+  border-color: #d62828;
+  margin-left: 8px;
+}

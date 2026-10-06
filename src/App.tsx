@@ -1,191 +1,52 @@
 import { useState } from "react";
-import {
-  cellsByColumn,
-  GRID_COLUMNS,
-  type AnswerCheck,
-  type ColumnCheck,
-} from "./model/answer";
-import {
-  cellImage,
-  cellText,
-  type ResolvedCell,
-  type ResolvedDescription,
-} from "./model/resolve";
-import {
-  answer as answerSession,
-  firstPassScore,
-  next as nextSession,
-  progress,
-  startSession,
-  type Session,
-} from "./model/session";
+import { DescriptionGame } from "./DescriptionGame";
+import { ReliefGame } from "./relief/ReliefGame";
 
-function Cell({ cell }: { cell: ResolvedCell | undefined }) {
-  if (!cell) return <div className="cell" />;
-  const image = cellImage(cell);
-  if (image) {
-    return (
-      <div className="cell">
-        <img src={image} alt={cell.id} />
-      </div>
-    );
-  }
-  return (
-    <div className="cell cell-text">
-      {cellText(cell).map((line, i) => (
-        <span key={i}>{line}</span>
-      ))}
-    </div>
-  );
-}
+type Game = "descriptions" | "relief";
 
-function columnClass(check: ColumnCheck | undefined): string {
-  if (!check) return "column";
-  return check.valid ? "column ok" : "column ko";
-}
-
-function Grid({
-  desc,
-  check,
-  small,
-}: {
-  desc: ResolvedDescription;
-  check?: AnswerCheck;
-  small?: boolean;
-}) {
-  const cells = cellsByColumn(desc);
-  return (
-    <div className={small ? "grid small" : "grid"}>
-      {GRID_COLUMNS.map((c) => (
-        <div key={c} className={columnClass(check?.columns[c])}>
-          {!small && <div className="header">{c}</div>}
-          <Cell cell={cells[c]} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Result({ check }: { check: AnswerCheck }) {
-  return (
-    <div className={check.valid ? "result ok" : "result ko"}>
-      <div className="verdict">
-        {check.valid ? "Correct !" : "Pas tout à fait."}
-      </div>
-      <ul className="columns">
-        {GRID_COLUMNS.map((c) => {
-          const col = check.columns[c];
-          if (!col) return null;
-          return (
-            <li key={c} className={col.valid ? "ok" : "ko"}>
-              <strong>{c}</strong> <code>{col.expected}</code>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-function Recap({
-  session,
-  onRestart,
-}: {
-  session: Session;
-  onRestart: () => void;
-}) {
-  const score = firstPassScore(session);
-  return (
-    <section className="recap">
-      <h2>
-        Premier passage : {score.correct} / {score.total}
-      </h2>
-      <ol>
-        {session.items.map((item, i) => (
-          <li key={i} className={item.firstCheck?.valid ? "ok" : "ko"}>
-            <Grid desc={item.desc} check={item.firstCheck} small />
-            <div className="first-answer">
-              {item.firstAnswer || <em>(vide)</em>}
-            </div>
-          </li>
-        ))}
-      </ol>
-      <button onClick={onRestart}>Nouvelle partie</button>
-    </section>
-  );
-}
+const GAMES: { id: Game; title: string; summary: string }[] = [
+  {
+    id: "descriptions",
+    title: "Définitions de poste",
+    summary: "Traduire les symboles IOF d'une définition de poste.",
+  },
+  {
+    id: "relief",
+    title: "Lecture du relief",
+    summary:
+      "Retrouver sur une carte en courbes de niveau d'où et dans quelle direction la vue a été prise.",
+  },
+];
 
 export function App() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [text, setText] = useState("");
-
-  const restart = () => {
-    setSession(startSession());
-    setText("");
-  };
-
-  if (!session) {
-    return (
-      <main>
-        <h1>Orientraining</h1>
-        <button onClick={restart}>Commencer une partie</button>
-      </main>
-    );
-  }
-
-  if (session.phase.kind === "done") {
-    return (
-      <main>
-        <h1>Orientraining</h1>
-        <Recap session={session} onRestart={restart} />
-      </main>
-    );
-  }
-
-  const { phase } = session;
-  const item = session.items[phase.index];
-  const { done, total } = progress(session);
-
-  const submit = (e: { preventDefault(): void }) => {
-    e.preventDefault();
-    setSession(answerSession(session, text));
-  };
-
-  const goNext = () => {
-    setSession(nextSession(session));
-    setText("");
-  };
+  const [game, setGame] = useState<Game | null>(null);
+  const current = GAMES.find((g) => g.id === game);
 
   return (
-    <main>
-      <h1>Orientraining</h1>
-      <div className="status">
-        {session.round === 1 ? "Passage" : `Reprise ${session.round - 1}`} ·{" "}
-        {done} / {total}
-      </div>
-      <Grid
-        desc={item.desc}
-        check={phase.kind === "reviewing" ? phase.check : undefined}
-      />
-      {phase.kind === "answering" ? (
-        <form className="answer" onSubmit={submit}>
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Écris la définition en français"
-            autoFocus
-          />
-          <button type="submit">Valider</button>
-        </form>
+    <main className={game === "relief" ? "wide" : undefined}>
+      {current ? (
+        <>
+          <div className="topbar">
+            <button className="back" onClick={() => setGame(null)}>
+              ← Menu
+            </button>
+            <h1>{current.title}</h1>
+          </div>
+          {current.id === "descriptions" ? <DescriptionGame /> : <ReliefGame />}
+        </>
       ) : (
         <>
-          <div className="answer">
-            <input value={text} readOnly />
-            <button onClick={goNext} autoFocus>
-              Suivant
-            </button>
-          </div>
-          <Result check={phase.check} />
+          <h1>Orientraining</h1>
+          <ul className="menu">
+          {GAMES.map((g) => (
+            <li key={g.id}>
+              <button onClick={() => setGame(g.id)}>
+                <strong>{g.title}</strong>
+                <span>{g.summary}</span>
+              </button>
+            </li>
+          ))}
+          </ul>
         </>
       )}
     </main>
