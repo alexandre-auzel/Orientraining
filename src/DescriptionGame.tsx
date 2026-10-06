@@ -70,7 +70,7 @@ function Result({ check }: { check: AnswerCheck }) {
   return (
     <div className={check.valid ? "result ok" : "result ko"}>
       <div className="verdict">
-        {check.valid ? "Correct !" : "Pas tout à fait."}
+        <span>{check.valid ? "Correct !" : "Pas tout à fait."}</span>
       </div>
       <ul className="columns">
         {GRID_COLUMNS.map((c) => {
@@ -97,20 +97,23 @@ function Recap({
   const score = firstPassScore(session);
   return (
     <section className="recap">
-      <h2>
-        Premier passage : {score.correct} / {score.total}
-      </h2>
-      <ol>
+      <p className="score">
+        <strong>{score.correct}</strong> sur {score.total} justes du premier
+        coup
+      </p>
+      <ol className="recap-list">
         {session.items.map((item, i) => (
           <li key={i} className={item.firstCheck?.valid ? "ok" : "ko"}>
             <Grid desc={item.desc} check={item.firstCheck} small />
             <div className="first-answer">
-              {item.firstAnswer || <em>(vide)</em>}
+              {item.firstAnswer || <em>Pas de réponse</em>}
             </div>
           </li>
         ))}
       </ol>
-      <button onClick={onRestart}>Nouvelle partie</button>
+      <button className="primary" onClick={onRestart}>
+        Nouvelle partie
+      </button>
     </section>
   );
 }
@@ -144,10 +147,11 @@ export function DescriptionGame() {
 
   return (
     <>
-      <div className="status">
-        {session.round === 1 ? "Passage" : `Reprise ${session.round - 1}`} ·{" "}
-        {done} / {total}
-      </div>
+      <p className="status">
+        {session.round === 1
+          ? `Définition ${done} sur ${total}`
+          : `Reprise des erreurs : ${done} sur ${total}`}
+      </p>
       <Grid
         desc={item.desc}
         check={phase.kind === "reviewing" ? phase.check : undefined}
@@ -160,13 +164,15 @@ export function DescriptionGame() {
             placeholder="Écris la définition en français"
             autoFocus
           />
-          <button type="submit">Valider</button>
+          <button className="primary" type="submit">
+            Valider
+          </button>
         </form>
       ) : (
         <>
           <div className="answer">
             <input value={text} readOnly />
-            <button onClick={goNext} autoFocus>
+            <button className="primary" onClick={goNext} autoFocus>
               Suivant
             </button>
           </div>

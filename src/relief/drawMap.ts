@@ -14,7 +14,7 @@ import { MAP_SIZE } from "./terrain";
 const BROWN = "#b8732e";
 /** Les lignes verticales de la grille servent aussi de lignes du nord. */
 const GRID_LINES = "#3d8fd6";
-const GUESS = "#b0189e";
+const GUESS = "#a3238e";
 const TRUTH = "#d62828";
 
 export interface MapMarks {

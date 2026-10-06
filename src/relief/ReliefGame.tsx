@@ -62,7 +62,7 @@ function Compass({ heading }: { heading: number }) {
   return (
     <div className="compass">
       <svg viewBox="-50 -50 100 100" width="84" height="84">
-        <circle r="46" fill="#fff" stroke="#1a1a1a" strokeWidth="1.5" />
+        <circle r="46" fill="#fff" stroke="#000" strokeWidth="1.5" />
         <g transform={`rotate(${-degrees})`}>
           {Array.from({ length: 36 }, (_, i) => (
             <line
@@ -71,7 +71,7 @@ function Compass({ heading }: { heading: number }) {
               y1="-46"
               x2="0"
               y2={i % 9 === 0 ? -38 : -42}
-              stroke="#1a1a1a"
+              stroke="#000"
               strokeWidth={i % 9 === 0 ? 1.5 : 0.8}
               transform={`rotate(${i * 10})`}
             />
@@ -87,19 +87,19 @@ function Compass({ heading }: { heading: number }) {
               fontWeight="700"
               textAnchor="middle"
               dominantBaseline="middle"
-              fill={label === "N" ? "#d62828" : "#1a1a1a"}
+              fill={label === "N" ? "#d62828" : "#000"}
               transform={`rotate(${i * 90}) rotate(${-i * 90 + degrees} 0 -26)`}
             >
               {label}
             </text>
           ))}
         </g>
-        <polygon points="0,-50 -5,-41 5,-41" fill="#1a1a1a" />
+        <polygon points="0,-50 -5,-41 5,-41" fill="#a3238e" />
       </svg>
       <div className="compass-heading">
         Tu regardes vers
         <strong>
-          {cardinal} · {Math.round(degrees)}°
+          {cardinal} <span className="compass-degrees">{Math.round(degrees)}°</span>
         </strong>
       </div>
     </div>
@@ -194,10 +194,44 @@ function plural(n: number, word: string): string {
 }
 
 function describe(result: GuessResult, mode: Mode): string {
-  const position = plural(result.steps, "case");
-  return mode === "easy"
-    ? position
-    : `${position} · ${result.directionSteps * 45}°`;
+  const position =
+    result.steps === 0 ? "position exacte" : `à ${plural(result.steps, "case")}`;
+  if (mode === "easy") return position;
+  const direction =
+    result.directionSteps === 0
+      ? "direction exacte"
+      : `direction à ${result.directionSteps * 45}°`;
+  return `${position}, ${direction}`;
+}
+
+/** Les manches de la partie, comme des postes : vert réussi, orange manqué. */
+function RoundTrack({
+  played,
+  current,
+}: {
+  played: Played[];
+  current: number;
+}) {
+  return (
+    <div className="round-track">
+      <ol aria-hidden="true">
+        {Array.from({ length: ROUNDS_PER_GAME }, (_, i) => {
+          const p = played[i];
+          const state = p
+            ? p.result.success
+              ? "ok"
+              : "ko"
+            : i === current
+              ? "current"
+              : "todo";
+          return <li key={i} className={state} />;
+        })}
+      </ol>
+      <span>
+        Manche {Math.min(current + 1, ROUNDS_PER_GAME)} sur {ROUNDS_PER_GAME}
+      </span>
+    </div>
+  );
 }
 
 function Recap({
@@ -213,39 +247,42 @@ function Recap({
   const successes = played.filter((p) => p.result.success).length;
   return (
     <section className="recap">
-      <h2>
-        {total} / {played.length * 100} points
-      </h2>
-      <div className="status">
-        Mode {mode === "easy" ? "facile" : "normal"} · {successes} manche
-        {successes > 1 ? "s" : ""} réussie{successes > 1 ? "s" : ""} sur{" "}
-        {played.length}
-      </div>
-      <ol>
+      <p className="score">
+        <strong>{total}</strong> sur {played.length * 100} points
+      </p>
+      <p className="recap-summary">
+        {successes === 0
+          ? "Aucune manche réussie"
+          : `${plural(successes, "manche")} réussie${successes > 1 ? "s" : ""}`}{" "}
+        sur {played.length}, en mode {mode === "easy" ? "facile" : "normal"}.
+      </p>
+      <ol className="recap-list">
         {played.map((p, i) => (
           <li key={i} className={p.result.success ? "ok" : "ko"}>
+            <span className="recap-marker" aria-hidden="true" />
             <strong>Manche {i + 1}</strong>
-            <span className="first-answer">
-              {describe(p.result, mode)} · {p.result.points} pts
-            </span>
+            <span className="recap-detail">{describe(p.result, mode)}</span>
+            <span className="recap-points">{p.result.points} pts</span>
           </li>
         ))}
       </ol>
-      <button onClick={onRestart}>Nouvelle partie</button>
+      <button className="primary" onClick={onRestart}>
+        Nouvelle partie
+      </button>
     </section>
   );
 }
 
 function ModeChoice({ onChoose }: { onChoose: (mode: Mode) => void }) {
   return (
-    <ul className="menu">
+    <ul className="choices">
       <li>
         <button onClick={() => onChoose("easy")}>
           <strong>Facile</strong>
           <span>
-            Une boussole indique la direction du regard : il ne reste qu'à
-            trouver le bon nœud de la grille. Réussi sur le bon nœud ou un
-            voisin, diagonale comprise.
+            Une boussole donne la direction du regard : il reste à trouver le
+            bon nœud de la grille. Réussi sur le bon nœud ou un voisin,
+            diagonale comprise.
           </span>
         </button>
       </li>
@@ -254,7 +291,7 @@ function ModeChoice({ onChoose }: { onChoose: (mode: Mode) => void }) {
           <strong>Normal</strong>
           <span>
             Trouver le nœud de la grille et la direction parmi les huit.
-            Réussi sur le bon nœud ou un voisin (diagonale comprise), avec la
+            Réussi sur le bon nœud ou un voisin, diagonale comprise, avec la
             bonne direction.
           </span>
         </button>
@@ -322,6 +359,11 @@ export function ReliefGame() {
         ? `${cellName({ ...complete, direction: undefined })} : valide, ou clique sur un autre nœud.`
         : `${cellName(complete)} : valide, change de flèche, ou clique sur un autre nœud.`;
 
+  const current = played.length - (result ? 1 : 0);
+  const shownAnswer = easy
+    ? { ...round.answer, direction: undefined }
+    : round.answer;
+
   return (
     <div className="relief">
       <div className="relief-side">
@@ -329,49 +371,39 @@ export function ReliefGame() {
         <div className="relief-toolbar">
           {easy && <Compass heading={round.truth.heading} />}
           <div className="relief-toolbar-text">
-            <div className="status">
-              Mode {easy ? "facile" : "normal"} · Manche{" "}
-              {Math.min(played.length + (result ? 0 : 1), ROUNDS_PER_GAME)} /{" "}
-              {ROUNDS_PER_GAME}
-            </div>
+            <RoundTrack played={played} current={current} />
             <label className="relief-option">
               <input
                 type="checkbox"
                 checked={contours3d}
                 onChange={(e) => setContours3d(e.target.checked)}
               />
-              Aide : courbes de niveau sur la vue
+              Afficher les courbes de niveau sur la vue
             </label>
-            <div className="relief-option">
-              Grille : carreaux de {GRID_SPACING} m
-            </div>
+            <p className="relief-note">
+              Mode {easy ? "facile" : "normal"}, carreaux de {GRID_SPACING} m
+            </p>
           </div>
         </div>
         {result ? (
           <div className={result.success ? "result ok" : "result ko"}>
             <div className="verdict">
-              {result.success ? "Bien vu !" : "Pas tout à fait."}{" "}
-              {result.points} / 100
+              <span>{result.success ? "Bien vu !" : "Pas tout à fait."}</span>
+              <span className="verdict-points">{result.points} / 100</span>
             </div>
-            <div>
-              Ta réponse : {cellName(played[played.length - 1].guess)} — Solution : {cellName(easy ? { ...round.answer, direction: undefined } : round.answer)}
-            </div>
-            <div>
-              Position : {result.steps === 0 ? "exacte" : `à ${plural(result.steps, "case")}`}
-              {!easy && (
-                <>
-                  {" "}· Direction :{" "}
-                  {result.directionSteps === 0
-                    ? "exacte"
-                    : `écart de ${result.directionSteps * 45}°`}
-                </>
-              )}
-            </div>
-            <div className="legend">
-              <span className="dot guess" /> ta réponse{" "}
-              <span className="dot truth" /> le vrai point de vue
-            </div>
-            <button onClick={next} autoFocus>
+            <dl className="answers">
+              <dt>
+                <span className="dot guess" aria-hidden="true" /> Ta réponse
+              </dt>
+              <dd>{cellName(easy ? { ...played[played.length - 1].guess, direction: undefined } : played[played.length - 1].guess)}</dd>
+              <dt>
+                <span className="dot truth" aria-hidden="true" /> Solution
+              </dt>
+              <dd>{cellName(shownAnswer)}</dd>
+              <dt>Écart</dt>
+              <dd>{describe(result, mode)}</dd>
+            </dl>
+            <button className="primary" onClick={next} autoFocus>
               {played.length < ROUNDS_PER_GAME
                 ? "Manche suivante"
                 : "Voir le bilan"}
@@ -379,8 +411,12 @@ export function ReliefGame() {
           </div>
         ) : (
           <div className="relief-actions">
-            <span className="instruction">{instruction}</span>
-            <button onClick={validate} disabled={!complete}>
+            <p className="instruction">{instruction}</p>
+            <button
+              className="primary"
+              onClick={validate}
+              disabled={!complete}
+            >
               Valider
             </button>
           </div>
